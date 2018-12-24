@@ -167,7 +167,7 @@ util.toAssetId = function(asset) {
  * @param Object change Excess bitcoins are paid to this address. Fromat: {address: CHANGE_ADDR, value: AMOUNT, fee_per_kb: FEE_PER_KB}. If fee_per_kb is specified, the fee amount will be determined from a transaction size and `value` will be ignored.
  * @return Buffer The unsinged raw transaction. You should sign it before broadcasting.
  */
-util.buildTransaction = function(inputs, dest, message, change, network, oldStyle) {
+util.buildTransaction = function(inputs, dest, message, change, network) {
 	var tx = new bitcoin.Transaction();
 	// Add inputs.
 	for(var i in inputs) {
@@ -175,24 +175,16 @@ util.buildTransaction = function(inputs, dest, message, change, network, oldStyl
 		var hash = Buffer.from(input.txid.match(/.{2}/g).reverse().join(''), 'hex');
 		tx.addInput(hash, input.vout);
 	}
-	// Add destination output.
-	if(dest) {
-		if(typeof dest == 'string') {
-			dest = {
-				address: dest,
-				value: 5430,
-			};
-		}
-		tx.addOutput(bitcoin.address.toOutputScript(dest.address, util.getBitcoinJSNetwork(network)), dest.value);
-	}
+	 
 	// Add message.
-	var encrypted = message.toEncrypted(inputs[0].txid, oldStyle);
+	var encrypted = message.toEncrypted(inputs[0].txid);
 	for(var bytesWrote=0; bytesWrote<encrypted.length; bytesWrote+=util.MAX_OP_RETURN) {
 		tx.addOutput(bitcoin.script.nullDataOutput(encrypted.slice(bytesWrote, bytesWrote+util.MAX_OP_RETURN)), 0);
 	}
 	// Add change.
 	if(change.fee_per_kb) throw new Error('Calculating fee from change.fee_per_kb is not supported yet');
 	tx.addOutput(bitcoin.address.toOutputScript(change.address, util.getBitcoinJSNetwork(network)), change.value);
+	tx.version = 2; //set version number to 2 as is the default nowadays
 	return tx.toBuffer();
 };
 

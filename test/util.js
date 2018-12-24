@@ -31,16 +31,22 @@ describe('util', function() {
 	});
 	it('should build a transaction', function() {
 		var inputs = [{
-			txid: '990e1388e6f16008fc33b6d945bcf9981c87d1d339ef9c685fb9305309b946a8',
+			txid: '43c8f86a9668092c7bcc89dced79562a9f55f269cd4cf282d29125876b475b1e',
 			vout: 1,
 		}];
-		var message = Message.createSend(util.assetNameToId('VISVIRIAL'), Long.fromString('100000000', true));
+		var memo = Buffer.from("hello world", 'utf8');
+		var pubkeyhash= Buffer.from("43f54875a20596fde56a53a701d855bfacc812fd", 'hex'); 
+		var networkPrefix = 111;
+		var quantity = 100000000; //token is divisible so quantity is in satoshis
+		var message = Message.createEnhancedSend('SARUTOBI', quantity, networkPrefix, pubkeyhash, memo);
+		console.log(message.data.toString('hex'))
+ 
 		var change = {
-			address: 'mtGffL93zFs3gdhcFo5DGkCQxSJFfdttYa',
-			value: 99925290,
+			address: 'n3D2BSyPYJzhaf75X2DVGyAvSKTALfWbmH',
+			value: 9598944358,
 		};
 		var rawtx = util.buildTransaction(inputs, 'msTBjkycK1ZmPq1EBkQUwvSYq2fm5KrpJJ', message, change, 'testnet', true/*oldStyle*/);
-		assert.deepEqual(rawtx.toString('hex'), '0100000001a846b9095330b95f689cef39d3d1871c98f9bc45d9b633fc0860f1e688130e990100000000ffffffff0336150000000000001976a91482eb113f0455107b1788093844f3027595b0b44888ac00000000000000001e6a1c6ad7042493a8749786f99d122f7aaa23dd5ac4d90d98acad76d9a7a92abdf405000000001976a9148be5ed53f1529e493b4c06f945f805b31afb400388ac00000000');
-	});
-});
-
+		console.log("tx is",rawtx.toString('hex'));
+		assert.deepEqual(rawtx.toString('hex'), '02000000011e5b476b872591d282f24ccd69f2559f2a5679eddc89cc7b2c0968966af8c8430100000000ffffffff0200000000000000003b6a39e20ca89899bfa085397892b16af15b1126bcbdc5f53b540c150ccf072db76b931f7b480875706b302cdb32c7dddf65de24bec302c9bdc877956644243c020000001976a914edee861dff4de166683e4c54ae3869cd05c7ae0f88ac00000000');
+	}); 
+}); 

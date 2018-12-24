@@ -15,28 +15,25 @@ var Message = function(id, data, prefix) {
 	this.data = data;
 };
 
-Message.prototype.toSerialized = function(oldStyle) {
-	var bufid;
-	if(oldStyle) {
-		bufid = Buffer.alloc(4);
-		bufid.writeUInt32BE(this.id);
-	} else {
-		bufid = Buffer.alloc(1);
-		bufid.writeUInt8(this.id);
-	}
+Message.prototype.toSerialized = function() {
+	 
+	var bufid = Buffer.alloc(1);
+	bufid.writeUInt8(this.id);
+	 
 	return Buffer.concat([
 		Buffer.from(this.prefix),
 		bufid,
 		this.data
 	]);
+
 };
 
 /**
  * Generate an encrypted binary data.
  * @param Buffer/String key A key used to sign. Buffer or hex-encoded string.
  */
-Message.prototype.toEncrypted = function(key, oldStyle) {
-	return util.arc4(key, this.toSerialized(oldStyle));
+Message.prototype.toEncrypted = function(key) {
+	return util.arc4(key, this.toSerialized());
 };
 
 Message.TYPES = {
@@ -151,20 +148,7 @@ Message.TYPES = {
 				type: 'UInt64BE',
 			},
 		],
-	},
-	0: {
-		type: 'Send',
-		structure: [
-			{
-				label: 'asset_id',
-				type: 'AssetID',
-			},
-			{
-				label: 'quantity',
-				type: 'UInt64BE',
-			},
-		],
-	},
+	}, 
 	2: {
 		type: 'Enhanced Send',
 		structure: [
@@ -179,6 +163,10 @@ Message.TYPES = {
 			{
 				label: 'destination',
 				type: 'Address',
+			},
+			{
+				label: 'memo',
+				type: 'Memo',
 			},
 		],
 	}
@@ -233,6 +221,13 @@ Message.prototype.parse = function() {
 			case 'Address':
 				var hexString = this.data.toString('hex');
 				data[item.label] = hexString.substr(32, 42);
+				break;
+			case 'Memo':
+				/*CNTRPRTY + Message ID + Asset Name + Asset Qty + 21 bytes of Receiving network prefix and public key hash + Memo*/
+				var hexString = this.data.toString("hex");//note data starts from Asset Name offset 
+				var endOfPubKeyHashOffset = 74;
+				var hex = hexString.substr(endOfPubKeyHashOffset, hexString.length);
+				data[item.label] = Buffer.from(hex, 'hex').toString();
 				break;
 			default:
 				throw new Error('Internal error: invalid item type: '+item.type)
@@ -429,25 +424,11 @@ Message.createPublish = function() {
 	throw new Error('Not implemented');
 };
 
-/* Rock-Paper-Scissors type message is removed. We will not implement here. */
-//Message.createRPS = function() {};
-//Message.createRPSResolve = function() {};
+Message.createEnhancedSend = function(asset, quantity,network_prefix,public_key_hash,memo_buffer) {
 
-Message.createSend = function(asset, quantity) {
-	// Accept flexible params.
-	var asset_id = util.toAssetId(asset);
-	quantity = Long.fromValue(quantity);
-	// Create input buffers.
-	var buf_asset_id = Buffer.from(asset_id.toBytesBE());
-	var buf_quantity = Buffer.from(quantity.toBytesBE());
-	return new Message(0, Buffer.concat([
-		buf_asset_id,
-		buf_quantity,
-	]));
-};
-
-Message.createEnhancedSend = function(asset, quantity,network_prefix,public_key_hash) {
-	// Accept flexible params.
+	if(memo_buffer.length > 34){
+		throw new Error('Memo must be 34 bytes or less');
+	}
 
 	var asset_id = util.toAssetId(asset);
 	quantity = Long.fromValue(quantity);
@@ -465,6 +446,7 @@ Message.createEnhancedSend = function(asset, quantity,network_prefix,public_key_
 		buf_quantity,
 		buf_network_prefix,
 		buf_public_key_hash,
+		memo_buffer
 	]));
 };
 

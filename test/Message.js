@@ -12,16 +12,11 @@ var encrypted_new = '410a095f92654317ca6694841300849092a6f1043ddbd8980e269b4417c
 var decrypted_new = '434e545250525459148f78715211fdc7f800000002540be40001000000000000000000077664677275636b';
 
 describe('Message', function() {
-	it('should decrypt correctly (old)', function() {
-		assert.equal(Message.fromEncrypted(key_old, encrypted_old).toSerialized(true).toString('hex'), decrypted_old);
-	});
-	it('should encrypt correctly (old)', function() {
-		assert.equal(Message.fromSerialized(decrypted_old).toEncrypted(key_old, true).toString('hex'), encrypted_old);
-	});
-	it('should decrypt correctly (new)', function() {
+	 
+	it('should decrypt correctly', function() {
 		assert.equal(Message.fromEncrypted(key_new, encrypted_new).toSerialized().toString('hex'), decrypted_new);
 	});
-	it('should encrypt correctly (new)', function() {
+	it('should encrypt correctly', function() {
 		assert.equal(Message.fromSerialized(decrypted_new).toEncrypted(key_new).toString('hex'), encrypted_new);
 	});
 	it('should create Broadsact message correctly', function() {
@@ -48,11 +43,15 @@ describe('Message', function() {
 		assert.equal(
 			Message.createOrder('VISVIRIAL', 1000000000, 'XCP', '123000000000', 1000).data.toString('hex'),
 			'0000040d5cba2a73000000003b9aca0000000000000000010000001ca35f0e0003e80000000000000000');
-	});
-	it('should create Send message correctly', function() {
+	}); 
+	it('should create Enhanced Send message correctly', function() {
+
+		var memo = Buffer.from("hello world", 'utf8');
+		var pubkeyhash= Buffer.from("0780c76487c8d257aaf0a047382670ba140c2f17", 'hex');
 		assert.equal(
-			Message.createSend('XCP', 100000000).data.toString('hex'),
-			'00000000000000010000000005f5e100');
+			Message.createEnhancedSend('SARUTOBI', 1, 0,pubkeyhash, memo).data.toString('hex'),
+			'00000021b5cd45720000000000000001000780c76487c8d257aaf0a047382670ba140c2f1768656c6c6f20776f726c64');
 	});
+
 });
 
